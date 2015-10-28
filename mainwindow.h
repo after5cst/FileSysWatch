@@ -13,6 +13,12 @@ namespace Ui {
 class MainWindow;
 }
 
+struct FileInfoAndData
+{
+    QFileInfo info;
+    std::unique_ptr<char[]> data;
+};
+
 class MainWindow : public QMainWindow
 {
     Q_OBJECT
@@ -35,7 +41,7 @@ private:
     Ui::MainWindow *ui;
     QFileSystemWatcher *watcher;
 
-    typedef std::map<QString, QFileInfo> map_t;
+    typedef std::map<QString, FileInfoAndData> map_t;
     map_t fileInfo;
     bool  initialized;
 };
