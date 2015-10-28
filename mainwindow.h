@@ -1,7 +1,12 @@
 #ifndef MAINWINDOW_H
 #define MAINWINDOW_H
 
+#include <QFileInfo>
 #include <QMainWindow>
+
+#include <map>
+#include <memory>
+
 class QFileSystemWatcher;
 
 namespace Ui {
@@ -29,6 +34,10 @@ private:
 
     Ui::MainWindow *ui;
     QFileSystemWatcher *watcher;
+
+    typedef std::map<QString, QFileInfo> map_t;
+    map_t fileInfo;
+    bool  initialized;
 };
 
 #endif // MAINWINDOW_H

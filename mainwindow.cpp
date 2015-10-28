@@ -3,9 +3,11 @@
 
 #include <QFileDialog>
 #include <QFileSystemWatcher>
+#include <QListWidgetItem>
 
 MainWindow::MainWindow(QWidget *parent)
-    : QMainWindow(parent), ui(new Ui::MainWindow), watcher(nullptr)
+    : QMainWindow(parent), ui(new Ui::MainWindow), watcher(nullptr),
+      initialized(false)
 {
     ui->setupUi(this);
 
@@ -42,6 +44,7 @@ void MainWindow::slotOpenWatch()
     slotDirectoryChanged(path);
     ui->listWidget->show();
     ui->plainTextEdit->show();
+    initialized = true;
 }
 
 void MainWindow::slotCloseWatch()
@@ -49,6 +52,7 @@ void MainWindow::slotCloseWatch()
     if (nullptr != watcher)
     {
         watcher->deleteLater();
+        watcher = nullptr;
     }
 
     ui->listWidget->hide();
@@ -56,6 +60,7 @@ void MainWindow::slotCloseWatch()
 
     ui->plainTextEdit->hide();
     ui->plainTextEdit->clear();
+    initialized = false;
 }
 
 void MainWindow::slotDirectoryChanged(const QString &path)
@@ -65,7 +70,7 @@ void MainWindow::slotDirectoryChanged(const QString &path)
 
     QDir dir(path);
     auto allFiles = dir.entryList(QDir::Files, QDir::Name);
-    for (auto& file : allFiles)
+    for (auto &file : allFiles)
     {
         file = dir.absoluteFilePath(file);
     }
@@ -76,22 +81,22 @@ void MainWindow::slotDirectoryChanged(const QString &path)
     {
         if (iterWatch == watchedFiles.end())
         {
-            // TODO : Remove watch on file.
+            addWatch(*iterAll);
             ++iterAll;
         }
         else if (iterAll == allFiles.end())
         {
-            // TODO : Add watch on file.
+            delWatch(*iterWatch);
             ++iterWatch;
         }
         else if ((*iterAll) < (*iterWatch))
         {
-            // TODO : Remove watch on file.
+            addWatch(*iterAll);
             ++iterAll;
         }
         else if ((*iterAll) > (*iterWatch))
         {
-            // TODO : Add watch on file.
+            delWatch(*iterWatch);
             ++iterWatch;
         }
         else // items match
@@ -100,7 +105,75 @@ void MainWindow::slotDirectoryChanged(const QString &path)
             ++iterWatch;
         }
     }
+    setWindowTitle(path);
 }
 
-void MainWindow::slotFileChanged(const QString &path) {}
+void MainWindow::slotFileChanged(const QString &path)
+{
+    QFileInfo fi(path);
+    QString name = fi.fileName();
 
+    auto iter = fileInfo.find(name);
+    if (fileInfo.end() == iter)
+    {
+        ui->plainTextEdit->appendPlainText(tr("NOTFOUND: ") + name);
+        return;
+    }
+
+    // Update the text Output.
+    if (fi.exists())
+    {
+        ui->plainTextEdit->appendPlainText(tr("CHANGED: ") + name);
+    }
+    else
+    {
+        delWatch(path);
+    }
+}
+
+void MainWindow::addWatch(const QString &path)
+{
+    QFileInfo fi(path);
+    QString name = fi.fileName();
+
+    // Update the map.
+    fileInfo[name] = fi;
+
+    // Update the text Output.
+    if (initialized)
+    {
+        ui->plainTextEdit->appendPlainText(tr("CREATED: ") + name);
+    }
+
+    // Update the widget control
+    new QListWidgetItem(name, ui->listWidget);
+
+    // Update the watch
+    watcher->addPath(path);
+}
+
+void MainWindow::delWatch(const QString &path)
+{
+    QFileInfo fi(path);
+    QString name = fi.fileName();
+
+    // Update the map.
+    auto iter = fileInfo.find(name);
+    if (fileInfo.end() != iter)
+    {
+        fileInfo.erase(iter);
+    }
+
+    // Update the text Output.
+    ui->plainTextEdit->appendPlainText(tr("DELETED: ") + name);
+
+    // Update the widget control
+    auto items = ui->listWidget->findItems(name, Qt::MatchExactly);
+    for (auto &item : items)
+    {
+        delete item;
+    }
+
+    // Update the watch
+    watcher->removePath(path);
+}
