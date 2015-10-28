@@ -1,0 +1,7 @@
+<!DOCTYPE RCC><RCC version="1.0">
+ <qresource>
+     <file>Icons/application_exit.png</file>
+     <file>Icons/fileclose.png</file>
+     <file>Icons/filenew.png</file>
+ </qresource>
+</RCC>
